@@ -1,0 +1,12 @@
+<h2 mat-dialog-title>Hi {{data.name}}</h2>
+<mat-dialog-content>
+  <p>What will be this day's task?</p>
+  <mat-form-field>
+    <mat-label>Note Title</mat-label>
+    <input matInput [(ngModel)]="noteName" />
+  </mat-form-field>
+</mat-dialog-content>
+<mat-dialog-actions>
+  <!-- <button mat-button (click)="onNoClick()">No Thanks</button> -->
+  <button mat-button [mat-dialog-close]="noteName()" cdkFocusInitial>Ok</button>
+</mat-dialog-actions>

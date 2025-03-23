@@ -11,12 +11,15 @@
         <div *ngFor="let day of days" class="day-header" [ngStyle]="{'display': day === 'skip' ? 'none' : 'block'}">{{ day }}</div>
 
         <ng-container *ngFor="let hour of hours">
-          <div *ngFor="let day of days; let i = index" 
+          <div *ngFor="let day of days" 
                class="yews-calendar-cell" 
                (click)="addEvent(day, hour)">
-            <div class="event" *ngIf="events[day + '-' + hour]">{{ events[day + '-' + hour] }}</div>
+            <div class="event" *ngIf="events[day + '-' + hour]">
+              {{ events[day + '-' + hour] }}
+            </div>
           </div>
         </ng-container>
+        
       </div>
 </main>
 
