@@ -1,0 +1,36 @@
+.calendar-container {
+    display: grid;
+    grid-template-columns: 80px repeat(7, 1fr);
+    grid-template-rows: 50px repeat(24, 1fr);
+    width: 100%;
+    height: calc(25* 3rem + 3.125rem);
+    border: 1px solid #7DF9FF;
+  }
+  
+  .day-header, .hour-label, .time-slot {
+    border: 1px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  
+  .hour-label {
+    background: #ddd;
+    font-weight: bold;
+  }
+  
+  .time-slot {
+    background: #f9f9f9;
+    cursor: pointer;
+  }
+  
+  .event {
+    background: lightblue;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
