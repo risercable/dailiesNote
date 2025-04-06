@@ -1,23 +1,36 @@
 <main class="main">
-      <h1>Hello, {{ title }}</h1>
-      <p>Congratulations! Your app is running. 🎉</p>
+    <h1>Hello, {{ title }}</h1>
+    <p>Congratulations! Your app is running. 🎉</p>
 
-      <div class="calendar-container">
+    <div class="calendar-container">
         <div class="header">
           <div class="hour-label" style="height: 3rem;"> </div> <!-- placeholder -->
-          <div *ngFor="let hour of hours" class="hour-label" style="height: 3rem;">{{ hour }}</div>
+          <div *ngFor="let hour of hours; let i = index;" 
+               class="hour-label" 
+               style="height: 2rem;"
+               [ngStyle]="{'background-color': hour.currentHour ? '#5cdaf6' : '#ddd', 'color': '#000'}"
+               id="hour-{{i}}">{{ hour.time }}</div>
         </div>
 
         <div *ngFor="let day of days" class="day-header" [ngStyle]="{'display': day === 'skip' ? 'none' : 'block'}">{{ day }}</div>
 
         <ng-container *ngFor="let hour of hours">
-          <div *ngFor="let day of days" 
-               class="yews-calendar-cell" 
-               (click)="addEvent(day, hour)">
-            <div class="event" *ngIf="events[day + '-' + hour]">
-              {{ events[day + '-' + hour] }}
+            <div *ngFor="let day of days; let dayIndex = index;" 
+                 class="yews-calendar-cell" 
+                 [ngStyle]="{'border': day === 'skip' ? 'none' : '1px solid #ccc'}"
+                 (click)="hour.activeHour && addEvent(day, hour.time)">
+                 <div class="cell-box" 
+                    [ngStyle]="{
+                        'background-color': !hour.activeHour && dayIndex > 0 ? '#f0f0f0' : 'transparent',
+                        'width': '100%',
+                        'height': '100%'
+                    }">
+                    <div class="event" 
+                        *ngIf="events[day + '-' + hour.time]">
+                        {{ events[day + '-' + hour.time] }}
+                    </div>
+                </div>
             </div>
-          </div>
         </ng-container>
         
       </div>

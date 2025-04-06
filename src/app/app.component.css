@@ -1,29 +1,39 @@
 .calendar-container {
-    display: grid;
-    grid-template-columns: 80px repeat(7, 1fr);
-    grid-template-rows: 50px repeat(24, 1fr);
-    width: 100%;
-    height: calc(25* 3rem + 3.125rem);
-    border: 1px solid #7DF9FF;
-  }
+  display: grid;
+  grid-template-columns: 80px repeat(7, 1fr);
+  grid-template-rows: 50px repeat(24, 1fr);
+  width: 100%;
+  height: calc(4.165rem + 25 * 2rem);
+  border: 1px solid #7DF9FF;
+}
   
-  .day-header, .hour-label, .time-slot {
-    border: 1px solid #ccc;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-  }
+.day-header, .hour-label, .time-slot {
+  border: 1px solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
   
-  .hour-label {
-    background: #ddd;
-    font-weight: bold;
-  }
+.hour-label {
+  height: 2rem; /* Match the row height in grid-template-rows */
+  background: #ddd;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ccc;
+}
   
-  .time-slot {
-    background: #f9f9f9;
-    cursor: pointer;
-  }
+.time-slot {
+  height: 2rem; /* Match the row height */
+  background: #f9f9f9;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ccc;
+}
   
   .event {
     background: lightblue;
@@ -34,3 +44,15 @@
     align-items: center;
     justify-content: center;
   }
+
+.hours-container {
+  max-height: 285px; /* Adjust height as needed */
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  padding: 10px;
+}
+
+.hour-item {
+  padding: 5px;
+  font-size: 14px;
+}
