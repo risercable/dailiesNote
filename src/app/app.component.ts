@@ -15,6 +15,8 @@ import {
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
 import { LocalStorageService } from './services/local-storage.service';
+import { UserActivityService } from './services/hour-watcher.service';
+import { Subscription } from 'rxjs';
 
 export interface DialogData {
   noteName: string;
@@ -42,10 +44,14 @@ export class AppComponent implements OnInit {
   readonly name = model('');
   readonly dialog = inject(MatDialog);
   private readonly cdr = inject(ChangeDetectorRef);
+  private activitySub!: Subscription;
 
   @ViewChild('hoursContainer') hoursContainer!: ElementRef<HTMLDivElement>;
 
-  constructor(private localStorageService: LocalStorageService) {
+  constructor(
+    private localStorageService: LocalStorageService,
+    private activityService: UserActivityService,
+  ) {
     const hasSavedData = this.localStorageService.getItem('events');
 
     if (hasSavedData) {
@@ -55,25 +61,33 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     this.scrollToCurrentHour();
+    this.activitySub = this.activityService.activity$.subscribe(event => {
+      console.log('User did something:', event.type);
+      this.scrollToCurrentHour();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.activitySub.unsubscribe();
   }
 
   scrollToCurrentHour(): void {
-    if (this.currentHour) {
-      const currentHourIndex = new Date().getHours();
+    const currentHourIndex = new Date().getHours();
 
-      this.hours.forEach((hour, index) => {
-        hour.currentHour = index === currentHourIndex;
-        hour.activeHour = index >= currentHourIndex; // Disable past hours
-      });
+    this.currentHour = currentHourIndex.toString();
 
-      // Scroll to the current hour element
-      setTimeout(() => {
-        const targetElement = document.getElementById(`hour-${currentHourIndex}`);
-        if (targetElement) {
-          targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 250);
-    }
+    this.hours.forEach((hour, index) => {
+      hour.currentHour = index === currentHourIndex;
+      hour.activeHour = index >= currentHourIndex; // Disable past hours
+    });
+
+    // Scroll to the current hour element
+    setTimeout(() => {
+      const targetElement = document.getElementById(`hour-${currentHourIndex}`);
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 250);
   }
 
   findInEvents(key: string): void {
