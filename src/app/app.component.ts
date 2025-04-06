@@ -62,8 +62,8 @@ export class AppComponent implements OnInit {
       const currentHourIndex = new Date().getHours();
 
       this.hours.forEach((hour, index) => {
-        hour.currentHour = index === currentHourIndex - 1;
-        hour.activeHour = index >= currentHourIndex - 1; // Disable past hours
+        hour.currentHour = index === currentHourIndex;
+        hour.activeHour = index >= currentHourIndex; // Disable past hours
       });
 
       // Scroll to the current hour element
