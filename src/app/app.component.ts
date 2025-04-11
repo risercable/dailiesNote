@@ -3,6 +3,8 @@ import {FormsModule} from '@angular/forms';
 import {MatButtonModule} from '@angular/material/button';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
+import { PLATFORM_ID } from '@angular/core';
 import {
   MAT_DIALOG_DATA,
   MatDialog,
@@ -13,7 +15,8 @@ import {
   MatDialogTitle,
 } from '@angular/material/dialog';
 import {MatFormFieldModule} from '@angular/material/form-field';
-import {MatInputModule} from '@angular/material/input';
+import { MatInputModule } from '@angular/material/input';
+import {MatOption, MatSelectModule} from '@angular/material/select';
 import { LocalStorageService } from './services/local-storage.service';
 import { UserActivityService } from './services/hour-watcher.service';
 import { Subscription } from 'rxjs';
@@ -21,11 +24,12 @@ import { Subscription } from 'rxjs';
 export interface DialogData {
   noteName: string;
   name: string;
+  duration?: Number;
 }
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, CommonModule, MatFormFieldModule, MatInputModule, FormsModule, MatButtonModule],
+  imports: [RouterOutlet, CommonModule, MatFormFieldModule, MatInputModule, FormsModule, MatButtonModule, MatSelectModule],
   templateUrl: './app.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './app.component.css',
@@ -41,10 +45,12 @@ export class AppComponent implements OnInit {
   currentEntry: string = '';
   currentHour: string = new Date().getHours().toString();
   readonly noteName = signal('');
+  readonly duration = signal('');
   readonly name = model('');
   readonly dialog = inject(MatDialog);
   private readonly cdr = inject(ChangeDetectorRef);
   private activitySub!: Subscription;
+  private readonly platformId = inject(PLATFORM_ID);
 
   @ViewChild('hoursContainer') hoursContainer!: ElementRef<HTMLDivElement>;
 
@@ -82,12 +88,14 @@ export class AppComponent implements OnInit {
     });
 
     // Scroll to the current hour element
-    setTimeout(() => {
-      const targetElement = document.getElementById(`hour-${currentHourIndex}`);
-      if (targetElement) {
-        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 250);
+    if (isPlatformBrowser(this.platformId)) {
+      setTimeout(() => {
+        const targetElement = document.getElementById(`hour-${currentHourIndex}`);
+        if (targetElement) {
+          targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 250);
+    }
   }
 
   findInEvents(key: string): void {
@@ -101,11 +109,16 @@ export class AppComponent implements OnInit {
     console.log('isValid', isValid);
 
     if (isValid) {
-      const key = `${day}-${hour}`;
-      this.events[key] = isValid;
+      for (const res of isValid as Array<DialogData>) {
+        const duration = Number(res.duration) || 0; // Ensure duration is a valid number
+        const key = `${day}-${(Number(hour.split(':')[0]) + duration).toString() }:00`;
+        this.events[key] = res.noteName;
 
-      this.findInEvents(key);
-      this.cdr.detectChanges();
+        this.findInEvents(key);
+        this.cdr.detectChanges();
+        
+      };
+      
 
       this.localStorageService.saveToLocalStorage(this.events);
     } else {
@@ -113,18 +126,30 @@ export class AppComponent implements OnInit {
     }
   }
 
-  openDialog(): Promise<string | boolean> {
+  openDialog(): Promise<Array<DialogData> | boolean> {
     this.name.set('Sir/Madam');
     const dialogRef = this.dialog.open(DialogOverviewExampleDialog, {
-      data: { name: this.name(), noteName: this.noteName() },
+      data: { name: this.name(), noteName: this.noteName(), duration: this.duration() },
     });
 
-    return new Promise<string | boolean>((resolve) => {
+    return new Promise<Array<DialogData> | boolean>((resolve) => {
       dialogRef.afterClosed().subscribe(result => {
         console.log('The dialog was closed');
+        const dataToReturn = [] as Array<DialogData>;
         if (result !== undefined) {
-          this.noteName.set(result);
-          resolve(result);
+          this.noteName.set(result.noteName());
+          this.duration.set(result.duration());
+          const count = this.duration() as unknown as number;
+
+          
+          for (let res = 0; res < count; res++) {
+            dataToReturn.push({
+              noteName: this.noteName(),
+              duration: Number(res),
+              name: ''
+            })
+          }
+          resolve(dataToReturn);
         } else {
           resolve(false);
         }
@@ -145,12 +170,15 @@ export class AppComponent implements OnInit {
     MatDialogContent,
     MatDialogActions,
     MatDialogClose,
+    MatSelectModule,
+    MatOption
   ],
 })
 export class DialogOverviewExampleDialog {
   readonly dialogRef = inject(MatDialogRef<DialogOverviewExampleDialog>);
   readonly data = inject<DialogData>(MAT_DIALOG_DATA);
   readonly noteName = model(this.data.noteName);
+  readonly duration = model(this.data.duration);
 
   onNoClick(): void {
     this.dialogRef.close();

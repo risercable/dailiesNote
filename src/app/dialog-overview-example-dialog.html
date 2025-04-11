@@ -5,8 +5,16 @@
     <mat-label>Note Title</mat-label>
     <input matInput [(ngModel)]="noteName" />
   </mat-form-field>
+  <br />
+  <p>Select time Duration (This just notifies client)</p>
+  <mat-form-field>
+    <mat-select [(ngModel)]="duration">
+      <mat-option value="1">1 hr</mat-option>
+      <mat-option value="2">2 hr</mat-option>
+    </mat-select>
+  </mat-form-field>
 </mat-dialog-content>
 <mat-dialog-actions>
   <!-- <button mat-button (click)="onNoClick()">No Thanks</button> -->
-  <button mat-button [mat-dialog-close]="noteName()" cdkFocusInitial>Ok</button>
+  <button mat-button [mat-dialog-close]="{noteName: noteName, duration: duration}" cdkFocusInitial>Ok</button>
 </mat-dialog-actions>
