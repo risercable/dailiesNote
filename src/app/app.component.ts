@@ -20,6 +20,8 @@ import {MatOption, MatSelectModule} from '@angular/material/select';
 import { LocalStorageService } from './services/local-storage.service';
 import { UserActivityService } from './services/hour-watcher.service';
 import { Subscription } from 'rxjs';
+import { CommonService } from './common.service';
+import { HttpClient } from '@angular/common/http';
 
 export interface DialogData {
   noteName: string;
@@ -57,6 +59,8 @@ export class AppComponent implements OnInit {
   constructor(
     private localStorageService: LocalStorageService,
     private activityService: UserActivityService,
+    private commonService: CommonService,
+    private http: HttpClient
   ) {
     const hasSavedData = this.localStorageService.getItem('events');
 
@@ -67,14 +71,18 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     this.scrollToCurrentHour();
-    this.activitySub = this.activityService.activity$.subscribe(event => {
-      console.log('User did something:', event.type);
-      this.scrollToCurrentHour();
-    });
+    // this.activitySub = this.activityService.activity$.subscribe(event => {
+    //   console.log('User did something:', event.type);
+    //   this.scrollToCurrentHour();
+    // });
+
+    // this.http.post('http://localhost:5000/enders', { data: 'test' }).subscribe({
+    //   next: response => console.log('Response:', response),
+    //   error: error => console.error('Error:', error)
+    // });
   }
 
   ngOnDestroy(): void {
-    this.activitySub.unsubscribe();
   }
 
   scrollToCurrentHour(): void {
@@ -117,8 +125,8 @@ export class AppComponent implements OnInit {
         this.findInEvents(key);
         this.cdr.detectChanges();
         
-      };
-      
+        this.commonService.create('api/notes', {noteName: res.noteName, duration: res.duration});
+      };      
 
       this.localStorageService.saveToLocalStorage(this.events);
     } else {
