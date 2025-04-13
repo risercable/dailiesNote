@@ -209,6 +209,11 @@ export class AppComponent implements OnInit {
       });
     });
   }
+
+  enableHoursForNextDays(dayDesc: string): boolean {
+    const currentDayDesc = new Date().toLocaleDateString('en-us', { weekday: 'short' }); // Get the current day (e.g., "Mon")
+    return dayDesc !== currentDayDesc; // Return true if the day is not the current day
+  }
 }
 
 @Component({

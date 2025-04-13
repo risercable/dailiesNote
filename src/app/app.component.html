@@ -18,7 +18,7 @@
             <div *ngFor="let day of days; let dayIndex = index;" 
                  class="yews-calendar-cell" 
                  [ngStyle]="{'border': day.desc === 'skip' ? 'none' : '1px solid #ccc'}"
-                 (click)="hour.activeHour && addEvent(day.desc, hour.timeWholeNumber)">
+                 (click)="(day.activeDay && hour.activeHour) || enableHoursForNextDays(day.desc) ? addEvent(day.desc, hour.timeWholeNumber) : null">
                  <div class="cell-box" 
                     [ngStyle]="{
                         'background-color': !hour.activeHour && day.activeDay ? '#f0f0f0' : 'transparent',
