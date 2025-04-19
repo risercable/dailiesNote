@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 require('dotenv').config(); // Load environment variables from .env
 
 // MongoDB connection URI
-const MONGO_URI = process.env.MONGO_URI; // Use MONGO_URI from .env
+const MONGO_URI = 'mongodb://localhost:27017/dailiesNote'; // Use MONGO_URI from .env
 
 // Function to connect to MongoDB
 const connectDB = async () => {

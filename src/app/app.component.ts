@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, inject, model, OnInit, signal, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, inject, model, OnInit, signal, ViewChild } from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {MatButtonModule} from '@angular/material/button';
 import { RouterOutlet } from '@angular/router';
@@ -18,8 +18,7 @@ import {MatFormFieldModule} from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import {MatOption, MatSelectModule} from '@angular/material/select';
 import { LocalStorageService } from './services/local-storage.service';
-import { UserActivityService } from './services/hour-watcher.service';
-import { Subscription } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import { CommonService } from './common.service';
 
 export interface DialogData {
@@ -57,7 +56,7 @@ export class AppComponent implements OnInit {
     };
   });
 
-  events: Array<{ id: string; title: string; start: string; end: string; day: string; }> = [];
+  events$ = new BehaviorSubject<Array<{ id: string; data: Array<{ title: string; start: string; end: string; day: string }> }>>([]);
 
   currentEntry: string = '';
   currentHour: string = new Date().getHours().toString();
@@ -65,30 +64,55 @@ export class AppComponent implements OnInit {
   readonly duration = signal('');
   readonly name = model('');
   readonly dialog = inject(MatDialog);
-  private readonly cdr = inject(ChangeDetectorRef);
-  private activitySub!: Subscription;
   private readonly platformId = inject(PLATFORM_ID);
 
   @ViewChild('hoursContainer') hoursContainer!: ElementRef<HTMLDivElement>;
 
   constructor(
     private localStorageService: LocalStorageService,
-    private activityService: UserActivityService,
     private commonService: CommonService,
   ) {
-    const hasSavedData = this.localStorageService.getItem('events');
-
-    if (hasSavedData) {
-      this.events = hasSavedData as [ {id: string; day: string; title: string; start: string; end: string} ] | [];
-    }
   }
 
   ngOnInit(): void {
+    this.getAllNotes();
     this.reorderDaysToStartWithCurrentDay();
     this.scrollToCurrentHour();
+
+    this.events$.subscribe(events => {
+      console.log('Current events:', events);
+    });
   }
 
   ngOnDestroy(): void {
+  }
+
+  async getAllNotes(): Promise<void> {
+    console.log('Calling API to get notes...');
+    this.commonService.getAll('api/getNotes').subscribe({
+      next: (notes) => {
+        console.log('API response:', notes);
+
+        if (notes) {
+          const events = Array.isArray(notes)
+            ? notes.map(note => ({
+                id: note.id,
+                data: note.data.map((dataItem: any) => ({
+                  title: dataItem.title,
+                  start: dataItem.start,
+                  end: dataItem.end,
+                  day: dataItem.day
+                }))
+              }))
+            : [];
+          this.events$.next(events); // Emit the updated events
+          console.log('Events updated:', events);
+        }
+      },
+      error: (error) => {
+        console.error('Error fetching notes:', error);
+      },
+    });
   }
 
   reorderDaysToStartWithCurrentDay(): void {
@@ -127,45 +151,24 @@ export class AppComponent implements OnInit {
     }
   }
 
-  // findInEvents(key: string): void {
-  //   this.currentEntry = this.events[key] ? String(this.events[key]) : '';
-  // }
-
-  async addEvent(day: string, hour: number): Promise<void> {
+  addEvent(day: string, hour: number): void {
     if (day === 'skip') return;
 
-    const isValid = await this.openDialog();
-    console.log('isValid', isValid);
-
-    if (isValid) {
-      for (const [index, res] of (isValid as Array<DialogData>).entries()) {
-        const duration = Number(res.duration) || 0; // Ensure duration is a valid number
-        const key = `${day}-${(Number(hour) + duration).toString() }:00`;
-
-        const saveData = {
-          id: crypto.randomUUID(),
-          day: day,
-          title: res.noteName,
-          start: `${day} ${hour}:00`,
-          end: `${day} ${Number(hour) + duration}:00`
-        };
-        
-        this.events.push(saveData);
-
-        // this.findInEvents(key);
-        this.cdr.detectChanges();
-        
-        this.commonService.create('api/notes', saveData);
-
-        if (index === 1 && Array.isArray(isValid) && isValid.length > 1) {
-          // this.extendEventDisplay(hour.time);
-        }
-      };      
-
-      this.localStorageService.saveToLocalStorage(this.events);
-    } else {
-      console.log("This item already exists");
-    }
+    this.saveData(day, hour).then((key) => {
+      const updatedEvents = [...this.events$.value]; // Get the current value of the events
+      updatedEvents.push({
+        id: crypto.randomUUID(),
+        data: [
+          {
+            day,
+            title: 'New Event',
+            start: `${day} ${hour}:00`,
+            end: `${day} ${hour + 1}:00`,
+          },
+        ],
+      });
+      this.events$.next(updatedEvents); // Emit the updated events
+    });
   }
 
   extendEventDisplay(currentHour: string): void {
@@ -174,9 +177,87 @@ export class AppComponent implements OnInit {
     const foundKey = Object.keys(eventObject).find(key => key.toString().endsWith(currentHour));
   }
 
-  checkForEvent(day: string, hour: string): any {
-    let events1 = this.events;
-    return events1?.filter(event => event?.start === `${day} ${hour}` && event?.end === `${day} ${hour}`)[0];
+  async saveData(day: string, hour: number): Promise<string> {
+    return this.openDialog().then((isValid) => {
+      console.log('isValid', isValid);
+
+      if (isValid) {
+        let allSaveData: Array<{
+          day: string;
+          title: string;
+          start: string;
+          end: string;
+        }> = [];
+        let id = crypto.randomUUID();
+
+        let key = `${(Number(hour)).toString()}:00`;
+        for (const [index, res] of (isValid as Array<DialogData>).entries()) {
+          const duration = Number(res.duration) || 0; // Ensure duration is a valid number
+
+          const eachSaveData = {
+            day: day,
+            title: res.noteName,
+            start: `${day} ${hour}:00`,
+            end: `${day} ${Number(hour) + duration}:00`
+          };
+
+          allSaveData.push(eachSaveData);
+        }
+
+        const updatedEvents = [...this.events$.value];
+        updatedEvents.push({
+          id,
+          data: [...allSaveData]
+        });
+        this.events$.next(updatedEvents);
+
+        this.commonService.create('api/notes', { id, data: [...allSaveData] }).subscribe({
+          next: (response) => {
+            setTimeout(() => {
+            }, 0);
+          },
+          error: (error) => {
+            console.error('Error creating note:', error);
+          }
+        });
+
+        this.localStorageService.saveToLocalStorage(updatedEvents);
+
+        return key; // Explicitly return void
+      } else {
+        console.log("This item already exists");
+        return ''; // Return an empty string if the item already exists
+      }
+    }).catch((error) => {
+      console.error('Error in openDialog:', error);
+      return ''; // Return an empty string in case of an error
+      console.error('Error in openDialog:', error);
+    });
+  }
+
+  checkForEvent(day: string, hour: string, events: any[]): any[] {
+    const eventsForDay = events
+      ?.flatMap(event => event.data.map((data: Array<{ title: string; start: string; end: string; day: string }>) => ({ ...data, id: event.id })))
+      ?.filter(eventData => eventData.day === day);
+
+    if (!eventsForDay || eventsForDay.length === 0) return [];
+
+    const eventsForHour = eventsForDay.filter(event => {
+      const eventStartHour = parseInt(event.start.split(' ')[1].split(':')[0], 10);
+      const eventEndHour = parseInt(event.end.split(' ')[1].split(':')[0], 10);
+      const currentHour = parseInt(hour, 10);
+      return currentHour >= eventStartHour && currentHour < eventEndHour;
+    });
+
+    return eventsForHour;
+  }
+
+  calculateGridRow(start: string, end: string): string {
+    const startHour = parseInt(start.split(' ')[1].split(':')[0], 10); // Extract the start hour
+    const endHour = parseInt(end.split(' ')[1].split(':')[0], 10); // Extract the end hour
+    const rowStart = startHour + 1; // Adjust for grid row indexing (if needed)
+    const rowSpan = endHour - startHour; // Calculate the span
+    return `${rowStart} / span ${rowSpan}`;
   }
 
   openDialog(): Promise<Array<DialogData> | boolean> {
@@ -213,6 +294,10 @@ export class AppComponent implements OnInit {
   enableHoursForNextDays(dayDesc: string): boolean {
     const currentDayDesc = new Date().toLocaleDateString('en-us', { weekday: 'short' }); // Get the current day (e.g., "Mon")
     return dayDesc !== currentDayDesc; // Return true if the day is not the current day
+  }
+
+  trackByEventId(index: number, event: any): string {
+    return event.id; // Use a unique identifier for tracking
   }
 }
 

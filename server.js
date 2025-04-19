@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const connectDB = require('./db'); // Import the MongoDB connection file
 const cors = require('cors'); // Import CORS middleware
 const Note = require('./models/Note'); // Import the Note model
+const mongoose = require('mongoose');
 
 const app = express();
 
@@ -24,22 +25,14 @@ app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-app.post('/enders', (req, res) => {
-  console.log('POST /api/enders called');
-  console.log('Request body:', req.body);
-
-  const { data } = req.body;
-  res.json({ message: 'Data received', data });
-});
-
 app.post('/api/notes', async (req, res) => {
   try {
-    const { noteName, duration } = req.body;
+    const {id, data } = req.body;
 
     // Create a new note
     const newNote = new Note({
-      noteName,
-      duration
+      id,
+      data
     });
 
     // Save the note to the database
@@ -48,6 +41,16 @@ app.post('/api/notes', async (req, res) => {
   } catch (error) {
     console.error('Error creating note:', error.message);
     res.status(500).json({ error: 'Failed to create note' });
+  }
+});
+
+app.get('/api/getNotes', async (req, res) => {
+  try {
+    const collections = await Note.find();
+    res.json(collections);
+  } catch (err) {
+    console.error('Error fetching collections:', err);
+    res.status(500).json({ error: 'Failed to fetch collections' });
   }
 });
 

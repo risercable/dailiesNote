@@ -11,9 +11,15 @@ export class CommonService {
 
   constructor(private http: HttpClient) {}
 
-  // GET request to fetch all data
   getAll<T>(endpoint: string): Observable<T> {
-    return this.http.get<T>(`${this.baseUrl}/${endpoint}`);
+    const observable = this.http.get<T>(`${this.baseUrl}/${endpoint}`);
+
+    observable.subscribe({
+      next: (response) => console.log('Data created successfully:', response),
+      error: (err) => console.error('Error creating data:', err)
+    });
+
+    return observable;
   }
 
   // POST request to add new data

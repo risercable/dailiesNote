@@ -20,13 +20,18 @@
                  [ngStyle]="{'border': day.desc === 'skip' ? 'none' : '1px solid #ccc'}"
                  (click)="(day.activeDay && hour.activeHour) || enableHoursForNextDays(day.desc) ? addEvent(day.desc, hour.timeWholeNumber) : null">
                  <div class="cell-box" 
+                    style="position: relative;" 
                     [ngStyle]="{
                         'background-color': !hour.activeHour && day.activeDay ? '#f0f0f0' : 'transparent',
                         'width': '100%',
                         'height': '100%'
                     }">
-                    <ng-container *ngIf="checkForEvent(day.desc, hour.time) as event">
-                        <div class="event">
+                    <ng-container *ngIf="(events$ | async) as events">
+                        <div *ngFor="let event of checkForEvent(day.desc, hour.time, events)" 
+                             class="event" 
+                             [ngStyle]="{
+                               'grid-row': calculateGridRow(event.start, event.end)
+                             }">
                             {{ event.title }}
                         </div>
                     </ng-container>
