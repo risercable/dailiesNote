@@ -27,10 +27,11 @@
                         'height': '100%'
                     }">
                     <ng-container *ngIf="(events$ | async) as events">
-                        <div *ngFor="let event of checkForEvent(day.desc, hour.time, events)" 
+                        <div *ngFor="let event of checkForEvent(day.desc, hour.time, events); let l = count" 
                              class="event" 
                              [ngStyle]="{
-                               'grid-row': calculateGridRow(event.start, event.end)
+                               'grid-row': l > 1 ? calculateGridRow(event.start, event.end) : null,
+                                'height': l > 1 ? '4rem' : '2rem'
                              }">
                             {{ event.title }}
                         </div>

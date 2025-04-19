@@ -156,17 +156,6 @@ export class AppComponent implements OnInit {
 
     this.saveData(day, hour).then((key) => {
       const updatedEvents = [...this.events$.value]; // Get the current value of the events
-      updatedEvents.push({
-        id: crypto.randomUUID(),
-        data: [
-          {
-            day,
-            title: 'New Event',
-            start: `${day} ${hour}:00`,
-            end: `${day} ${hour + 1}:00`,
-          },
-        ],
-      });
       this.events$.next(updatedEvents); // Emit the updated events
     });
   }
@@ -223,7 +212,7 @@ export class AppComponent implements OnInit {
 
         this.localStorageService.saveToLocalStorage(updatedEvents);
 
-        return key; // Explicitly return void
+        return JSON.stringify(allSaveData); // Convert the array to a string
       } else {
         console.log("This item already exists");
         return ''; // Return an empty string if the item already exists
@@ -237,18 +226,22 @@ export class AppComponent implements OnInit {
 
   checkForEvent(day: string, hour: string, events: any[]): any[] {
     const eventsForDay = events
-      ?.flatMap(event => event.data.map((data: Array<{ title: string; start: string; end: string; day: string }>) => ({ ...data, id: event.id })))
+      ?.flatMap(event =>
+        Array.isArray(event.data) // Ensure event.data is an array
+          ? event.data.map((data: { title: string; start: string; end: string; day: string; }) => ({ ...data, id: event.id }))
+          : [{ ...event.data, id: event.id }] // Handle single object case
+      )
       ?.filter(eventData => eventData.day === day);
-
+  
     if (!eventsForDay || eventsForDay.length === 0) return [];
-
+  
     const eventsForHour = eventsForDay.filter(event => {
       const eventStartHour = parseInt(event.start.split(' ')[1].split(':')[0], 10);
       const eventEndHour = parseInt(event.end.split(' ')[1].split(':')[0], 10);
       const currentHour = parseInt(hour, 10);
-      return currentHour >= eventStartHour && currentHour < eventEndHour;
+      return currentHour === eventStartHour || (currentHour > eventStartHour && currentHour < eventEndHour);
     });
-
+  
     return eventsForHour;
   }
 
@@ -256,7 +249,7 @@ export class AppComponent implements OnInit {
     const startHour = parseInt(start.split(' ')[1].split(':')[0], 10); // Extract the start hour
     const endHour = parseInt(end.split(' ')[1].split(':')[0], 10); // Extract the end hour
     const rowStart = startHour + 1; // Adjust for grid row indexing (if needed)
-    const rowSpan = endHour - startHour; // Calculate the span
+    const rowSpan = Math.max(1, endHour - startHour); // Ensure the row span is at least 1
     return `${rowStart} / span ${rowSpan}`;
   }
 
